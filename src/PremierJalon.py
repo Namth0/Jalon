@@ -45,10 +45,58 @@ def color(url):
     except Exception as e:
         print(f"Error processing URL: {e}")
         return ""
+    
+def shape(url):
+    try:
+        page = requests.get(url)
+        soup = BeautifulSoup(page.content, 'html.parser')
+        div_content = soup.find('div', class_='mprofile')
+        if div_content:
+            p_tags = div_content.find_all('p')
+            if len(p_tags) >= 2:  
+                second_p_tag = p_tags[1] 
+                a_tag = second_p_tag.find('a')
+                if a_tag and a_tag.find_next_sibling('a'):
+                    shape = a_tag.find_next_sibling('a').text.replace(" ", "")  
+                else:
+                    shape = a_tag.text.replace(" ", "")  
+                return shape
+            else:
+                return "Pas assez de balises <p> trouvées."
+    except Exception as e:
+        print(f"Erreur lors du traitement de l'URL : {e}")
+        return ""
+    
+def surface(url):
+     try:
+            page = requests.get(url)
+            soup = BeautifulSoup(page.content, 'html.parser')
+            div_content = soup.find('div', class_='mprofile')
+            if div_content:
+                p_tags = div_content.find_all('p')
+                if len(p_tags) >= 3:  
+                    third_p_tag = p_tags[2]  
+                    a_tag = third_p_tag.find('a')
+                    if a_tag and a_tag.find_next_sibling('a'):
+                        surface = a_tag.find_next_sibling('a').text.replace(" ", "")  
+                    else:
+                        surface = a_tag.text.replace(" ", "")  
+                    return surface
+                else:
+                    return "Pas assez de balises <p> trouvées."
+     except Exception as e:
+         print(f"Erreur lors du traitement de l'URL : {e}")
+         return ""
 
 
 for u in url:
     print(f"{u} -> {comestible(u)}")
 
-for i in url:
-    print(f"{i} -> {color(i)}")
+for r in url:
+    print(f"{r} -> {color(r)}")
+    
+for l in url:
+    print(f"{l} -> {shape(l)}")
+    
+for m in url:
+    print(f"{m} -> {surface(m)}")
