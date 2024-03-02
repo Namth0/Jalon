@@ -1,13 +1,8 @@
 import requests
+import pandas as pd
 from bs4 import BeautifulSoup
 
-url = {
-    "https://ultimate-mushroom.com/poisonous/103-abortiporus-biennis.html",
-    "https://ultimate-mushroom.com/edible/1010-agaricus-albolutescens.html",
-    "https://ultimate-mushroom.com/inedible/452-byssonectria-terrestris.html",
-    "https://ultimate-mushroom.com/poisonous/1010-agaricus-albolutescens.html"
-}
-
+# fonction pour récupérer la comestibilité du champignon
 def comestible(url):
     try:
         page = requests.get(url)
@@ -27,7 +22,8 @@ def comestible(url):
     except Exception as e:
         print(f"Error processing URL: {e}")
         return ""
-    
+
+# fonction pour récupérer la couleur du champignon
 def color(url):
     try:
         page = requests.get(url)
@@ -38,14 +34,15 @@ def color(url):
             if p_tag:
                 a_tag = p_tag.find('a')
                 if a_tag and a_tag.find_next_sibling('a'):
-                    color = a_tag.text + "-" + a_tag.find_next_sibling('a').text
+                    color = a_tag.text + "" + a_tag.find_next_sibling('a').text
                 else:
                     color = a_tag.text
         return color
     except Exception as e:
         print(f"Error processing URL: {e}")
-        return ""
-    
+    return ""
+
+# fonction pour récupérer la forme du champignon
 def shape(url):
     try:
         page = requests.get(url)
@@ -57,16 +54,15 @@ def shape(url):
                 second_p_tag = p_tags[1] 
                 a_tag = second_p_tag.find('a')
                 if a_tag and a_tag.find_next_sibling('a'):
-                    shape = a_tag.find_next_sibling('a').text.replace(" ", "")  
+                    shape = a_tag.find_next_sibling('a').text.replace(" ", "").replace("-", "")  # Suppression des espaces et des tirets
                 else:
-                    shape = a_tag.text.replace(" ", "")  
+                    shape = a_tag.text.replace(" ", "").replace("-", "")  # Suppression des espaces et des tirets
                 return shape
-            else:
-                return "Pas assez de balises <p> trouvées."
     except Exception as e:
         print(f"Erreur lors du traitement de l'URL : {e}")
-        return ""
-    
+    return ""
+
+# fonction pour récupérer la surface du champignon
 def surface(url):
      try:
             page = requests.get(url)
@@ -82,21 +78,76 @@ def surface(url):
                     else:
                         surface = a_tag.text.replace(" ", "")  
                     return surface
-                else:
-                    return "Pas assez de balises <p> trouvées."
      except Exception as e:
          print(f"Erreur lors du traitement de l'URL : {e}")
-         return ""
+     return ""
 
+# fonction pour récupérer les urls des champignons
+def get_mushroom_urls(main_url):
+    mushroom_urls = []
+    try:
+        page = requests.get(main_url)
+        soup = BeautifulSoup(page.content, 'html.parser')
+        links = soup.find_all('a', href=True)
+        for link in links:
+            href = link['href']
+            if href.startswith("https://ultimate-mushroom.com/") and href.endswith(".html"):
+                mushroom_urls.append(href)
+    except Exception as e:
+        print(f"Error fetching mushroom URLs: {e}")
+    return mushroom_urls
 
-for u in url:
-    print(f"{u} -> {comestible(u)}")
+# fonction pour créer une ligne csv
+def create_csv_line(url):
+    if url:
+        comestibility = comestible(url)
+        color_value = color(url)
+        shape_value = shape(url)
+        surface_value = surface(url)
+        return f"{comestibility},{color_value},{shape_value},{surface_value}"
+    return ""
 
-for r in url:
-    print(f"{r} -> {color(r)}")
+# fonction pour ecrire dans le csv les données
+def f():
+    main_url = "https://ultimate-mushroom.com/mushroom-alphabet.html"
+    mushroom_urls = get_mushroom_urls(main_url)
     
-for l in url:
-    print(f"{l} -> {shape(l)}")
-    
-for m in url:
-    print(f"{m} -> {surface(m)}")
+    with open('champignons.csv', 'w') as file:
+        for i,url in enumerate(mushroom_urls,start=1):
+            print(f"Processing URL {i}/{len(mushroom_urls)}: {url}")
+            csv_line = create_csv_line(url)
+            file.write(f"{csv_line}\n")
+
+# Ouvrir le fichier CSV en mode append ('a') pour ajouter la première ligne sans supprimer les données existantes
+def f2():
+    with open('champignons.csv', 'a') as file:
+        file.write("Edible,Color,Shape,Surface\n")
+
+# f() # Appel de la fonction pour écrire dans le csv les données
+#f2() # Appel de la fonction pour ajouter la première ligne sans supprimer les données existantes
+
+champignons = pd.read_csv('champignons.csv')
+
+print(champignons.head())
+print(champignons.tail())
+print(champignons.shape)
+
+# Inspection des elements de edibles Q8
+print(champignons['Edible'].value_counts())
+na_in_Edi = champignons['Edible'].isna().sum()
+print("NA    "+ str(na_in_Edi))
+
+# on remplace E I P par 0 1 2
+def replace_Edible(champignons):
+    champignons['Edible'].replace({'E': 0, 'I': 1, 'P': 2,}, inplace=True)
+    if champignons['Edible'].isna().sum() > 0:
+        champignons['Edible'].fillna(-1, inplace=True)
+    return champignons
+
+# on mets à jour la colonne Edible
+champignons = replace_Edible(champignons)
+
+#debug
+print(champignons.head())
+print(champignons.tail())
+print(champignons['Edible'].value_counts())
