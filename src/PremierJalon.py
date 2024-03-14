@@ -137,7 +137,7 @@ print(champignons['Edible'].value_counts())
 na_in_Edi = champignons['Edible'].isna().sum()
 print("NA    "+ str(na_in_Edi))
 
-# on remplace E I P par 0 1 2
+# on remplace E I P par 0 1 2 , Q9 et Q10 on remplace les valeurs manquantes par -1
 def replace_Edible(champignons):
     champignons['Edible'].replace({'E': 0, 'I': 1, 'P': 2,}, inplace=True)
     if champignons['Edible'].isna().sum() > 0:
@@ -148,6 +148,50 @@ def replace_Edible(champignons):
 champignons = replace_Edible(champignons)
 
 #debug
-print(champignons.head())
-print(champignons.tail())
-print(champignons['Edible'].value_counts())
+def debug():
+    print(champignons.head())
+    print("\n")
+    print(champignons.tail())
+    print("\n")
+    print(champignons['Edible'].value_counts())
+
+debug()
+
+""" Question 11 -> pd.unique(champignons["Shape"].str.split("-").explode().dropna())
+
+# 1. str.split("-"), Sépare chaque élément de la colonne "Shape" en une liste de sous-chaînes en utilisant le séparateur "-"
+# 2. explode(), Transforme les listes résultantes en autant de lignes distinctes que d'éléments dans ces listes
+# 3. dropna(), Supprime les valeurs nulles du DataFrame résultant, au cas où il y en aurait
+# 4. Renvoie toutes les formes uniques de champignons extraites de la colonne "Shape"
+
+"""
+
+def add_shape_col_and_surface_col(df):
+    """
+    Ajoute une nouvelle colonne pour chaque valeur de forme de champignon dans le DataFrame.
+
+    Args:
+    df (DataFrame): Le DataFrame contenant les données des champignons.
+
+    Returns:
+    DataFrame: Le DataFrame avec les nouvelles colonnes ajoutées.
+    """
+    # Boucle sur chaque valeur unique de forme de champignon
+    for shape_value in pd.unique(df["Shape"].str.split("-").explode().dropna()):
+        df[shape_value] = df["Shape"].str.contains(shape_value).fillna(False).astype(int)
+        
+    for surface_value in pd.unique(df["Surface"].str.split("-").explode().dropna()):
+        df[surface_value] = df["Surface"].str.contains(surface_value).fillna(False).astype(int)
+        
+    return df
+
+# Utilisation de la fonction pour ajouter les colonnes de forme,surface de champignon
+champignons = add_shape_col_and_surface_col(champignons)
+
+# Supprimer les colonnes "Shape" et "Surface"
+champignons = champignons.drop(columns=["Shape", "Surface"])
+
+debug()
+
+# Vérifier la taille du DataFrame après suppression des colonnes
+print(champignons.shape)  # devrait afficher (1113, 35)
