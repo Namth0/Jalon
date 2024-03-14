@@ -128,10 +128,6 @@ def f2():
 
 champignons = pd.read_csv('champignons.csv')
 
-print(champignons.head())
-print(champignons.tail())
-print(champignons.shape)
-
 # Inspection des elements de edibles Q8
 print(champignons['Edible'].value_counts())
 na_in_Edi = champignons['Edible'].isna().sum()
@@ -155,8 +151,6 @@ def debug():
     print("\n")
     print(champignons['Edible'].value_counts())
 
-debug()
-
 """ Question 11 -> pd.unique(champignons["Shape"].str.split("-").explode().dropna())
 
 # 1. str.split("-"), Sépare chaque élément de la colonne "Shape" en une liste de sous-chaînes en utilisant le séparateur "-"
@@ -167,16 +161,6 @@ debug()
 """
 
 def add_shape_col_and_surface_col(df):
-    """
-    Ajoute une nouvelle colonne pour chaque valeur de forme de champignon dans le DataFrame.
-
-    Args:
-    df (DataFrame): Le DataFrame contenant les données des champignons.
-
-    Returns:
-    DataFrame: Le DataFrame avec les nouvelles colonnes ajoutées.
-    """
-    # Boucle sur chaque valeur unique de forme de champignon
     for shape_value in pd.unique(df["Shape"].str.split("-").explode().dropna()):
         df[shape_value] = df["Shape"].str.contains(shape_value).fillna(False).astype(int)
         
@@ -185,7 +169,7 @@ def add_shape_col_and_surface_col(df):
         
     return df
 
-# Utilisation de la fonction pour ajouter les colonnes de forme,surface de champignon
+# Utilisation de la fonction pour ajouter les colonnes de forme,surface de champignon Q12 et Q13
 champignons = add_shape_col_and_surface_col(champignons)
 
 # Supprimer les colonnes "Shape" et "Surface"
@@ -193,5 +177,5 @@ champignons = champignons.drop(columns=["Shape", "Surface"])
 
 debug()
 
-# Vérifier la taille du DataFrame après suppression des colonnes
-print(champignons.shape)  # devrait afficher (1113, 35)
+# Vérification de la taille du DataFrame
+print(champignons.shape)  
