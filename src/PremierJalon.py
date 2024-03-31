@@ -127,11 +127,12 @@ def f2():
 #f2() # Appel de la fonction pour ajouter la première ligne sans supprimer les données existantes
 
 champignons = pd.read_csv('champignons.csv')
+champignons.insert(len(champignons.columns) - 1, "TrueMorels", 0)
 
 # Inspection des elements de edibles Q8
-print(champignons['Edible'].value_counts())
+"""print(champignons['Edible'].value_counts())
 na_in_Edi = champignons['Edible'].isna().sum()
-print("NA    "+ str(na_in_Edi))
+print("NA    "+ str(na_in_Edi))"""
 
 # on remplace E I P par 0 1 2 , Q9 et Q10 on remplace les valeurs manquantes par -1
 def replace_Edible(champignons):
@@ -175,7 +176,102 @@ champignons = add_shape_col_and_surface_col(champignons)
 # Supprimer les colonnes "Shape" et "Surface"
 champignons = champignons.drop(columns=["Shape", "Surface"])
 
-debug()
+#debug()
 
 # Vérification de la taille du DataFrame
 print(champignons.shape)  
+
+# Question 14: Etablir la liste des couleurs individuelles présentes dans notre jeu de données
+colors = pd.unique(champignons["Color"].str.split("-").explode().dropna())
+num_colors = len(colors)
+
+print(f"Le nombre de couleurs individuelles présentes dans notre jeu de données est de {num_colors}.")
+print(colors)
+
+#question 15
+COLOR_MAP = {
+    "White": (255, 255, 255),
+    "Pale": (218, 211, 200),
+    "Yellow": (255, 255, 0),
+    "Brown": (165, 42, 42),
+    "Pink": (255, 192, 203),
+    "Purple": (128, 0, 128),
+    "Tan": (210, 180, 140),
+    "Orange": (255, 165, 0),
+    "Gray": (128, 128, 128),
+    "Red": (255, 0, 0),
+    "Dark": (0, 0, 0),
+    "Green": (0, 255, 0),
+    "Blue": (0, 0, 255),
+    "Violet": (238, 130, 238),
+    "Lilac": (227, 191, 242)
+}
+
+# Création du DataFrame color_df avec les couleurs et les valeurs RGB correspondantes
+color_df = pd.DataFrame(columns=["Color", "R", "G", "B"])
+
+def fill_color_df(color_df, colors):
+    for color in colors:
+        r, g, b = COLOR_MAP.get(color, (0, 0, 0))  # Valeurs RGB à partir de COLOR_MAP, sinon (0, 0, 0)
+        color_df.loc[len(color_df)] = {"Color": color, "R": r, "G": g, "B": b}
+    return color_df
+
+colors = list(COLOR_MAP.keys())  # Utilisez les clés du dictionnaire COLOR_MAP comme couleurs
+color_df = fill_color_df(color_df, colors) # Remplir le DataFrame color_df avec les couleurs et les valeurs RGB correspondantes
+
+print(color_df)
+
+#question 16
+
+# Remplacer les valeurs NaN par une chaîne vide dans la colonne "Color"
+champignons["Color"] = champignons["Color"].fillna("")
+
+# Créer une nouvelle colonne dans champignons avec les couleurs combinées
+champignons["Combined_Colors"] = champignons["Color"].str.split("-").apply(frozenset)
+
+# Créer le DataFrame colors contenant les combinaisons uniques de couleurs
+colors = pd.DataFrame(champignons["Combined_Colors"].unique(), columns=["Combined_Colors"])
+
+print(colors)
+
+#question 17
+
+def complete_colors_with_mean(colors, color_df):
+    # Créer un DataFrame temporaire en explodant les frozensets dans la colonne 'Combined_Colors'
+    temp_df = colors['Combined_Colors'].apply(lambda x: list(x) if x else []).explode().reset_index().rename(columns={'Combined_Colors': 'Color', 'index': 'index'})
+
+    # Fusionner le DataFrame temporaire avec color_df sur la colonne 'Color'
+    merged_df = pd.merge(temp_df, color_df[['Color', 'R', 'G', 'B']], on='Color', how='left')
+
+    # Supprimer la colonne 'Color' du DataFrame fusionné
+    merged_df = merged_df.drop('Color', axis=1)
+
+    # Calculer la moyenne des colonnes R, G et B pour chaque groupe de couleurs
+    grouped_df = merged_df.groupby('index').mean()
+
+    # Fusionner le DataFrame original 'colors' avec les moyennes des colonnes R, G et B
+    colors = pd.merge(colors, grouped_df, left_index=True, right_index=True, how='left')
+
+    return colors
+
+# Appeler la fonction pour compléter colors avec les moyennes des composantes R, G et B
+colors = complete_colors_with_mean(colors, color_df)
+
+# Afficher le DataFrame résultant
+print(colors)
+
+def complete_champignons_with_rgb(champignons, colors):
+    # Fusionner champignons avec colors sur la colonne 'Combined_Colors'
+    champignons = pd.merge(champignons, colors, left_on='Combined_Colors', right_on='Combined_Colors', how='left')
+
+    # Supprimer la colonne 'Combined_Colors' du DataFrame fusionné
+    champignons = champignons.drop('Combined_Colors', axis=1)
+    champignons = champignons.drop('Color', axis=1)
+    champignons[['R', 'G', 'B']] = champignons[['R', 'G', 'B']].fillna(-255)
+    
+    return champignons
+
+# Appeler la fonction pour compléter champignons avec les valeurs RGB
+champignons = complete_champignons_with_rgb(champignons, colors)
+print(champignons)
+print(champignons.isna().values.any())
